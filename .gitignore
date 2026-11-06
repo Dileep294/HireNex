@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.*
+!.env.example
+*.env
+*.env.local
+
+# Production builds
+dist/
+dist-ssr/
+build/
+out/
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Uploads, database, user data & private files
+uploads/
+**/uploads/
+backend/uploads/
+backend/data/
+data/
+db/
+*.pdf
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary & Cache files
+temp/
+tmp/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
