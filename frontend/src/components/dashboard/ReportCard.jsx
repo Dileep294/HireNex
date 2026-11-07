@@ -7,6 +7,8 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
+  Trash2,
+  Eye,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -25,14 +27,21 @@ const getScoreColor = (score) => {
       border: 'border-indigo-500/30',
     };
   }
+  if (score >= 60) {
+    return {
+      text: 'text-amber-400',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+    };
+  }
   return {
-    text: 'text-amber-400',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
+    text: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/30',
   };
 };
 
-const ReportCard = ({ report }) => {
+const ReportCard = ({ report, onDelete = null }) => {
   const navigate = useNavigate();
   const reportId = report._id || report.id;
   const company = report.companyName || report.company;
@@ -48,7 +57,14 @@ const ReportCard = ({ report }) => {
     : 'Recently';
 
   const handleCardClick = () => {
-    navigate(`/report/${reportId}`);
+    navigate(`/reports/${reportId}`);
+  };
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(report);
+    }
   };
 
   // Extract skills/strengths tags
@@ -74,7 +90,7 @@ const ReportCard = ({ report }) => {
       <div>
         {/* Status / Score Header */}
         <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="overflow-hidden">
+          <div className="overflow-hidden flex-1">
             <h3 className="font-semibold text-base sm:text-lg text-white group-hover:text-indigo-300 transition-colors line-clamp-1">
               {report.jobTitle}
             </h3>
@@ -114,9 +130,9 @@ const ReportCard = ({ report }) => {
         </div>
 
         {/* Summary Snippet */}
-        {(report.aiAnalysis || report.summary) && (
+        {(report.aiAnalysis || report.scoreExplanation || report.summary) && (
           <p className="text-xs text-slate-400 line-clamp-2 mt-2 leading-relaxed">
-            {report.aiAnalysis || report.summary}
+            {report.aiAnalysis || report.scoreExplanation || report.summary}
           </p>
         )}
 
@@ -135,17 +151,34 @@ const ReportCard = ({ report }) => {
         )}
       </div>
 
-      {/* Bottom row: Date & View Action */}
+      {/* Bottom row: Date & Actions */}
       <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
         <span className="text-slate-500 flex items-center space-x-1.5">
           <Calendar className="w-3.5 h-3.5" />
           <span>{formattedDate}</span>
         </span>
 
-        <span className="inline-flex items-center space-x-1 font-medium text-indigo-400 group-hover:text-indigo-300 group-hover:translate-x-0.5 transition-all">
-          <span>View Plan</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </span>
+        <div className="flex items-center space-x-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              title="Delete report"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleCardClick}
+            className="inline-flex items-center space-x-1 font-medium text-indigo-400 group-hover:text-indigo-300 group-hover:translate-x-0.5 transition-all"
+          >
+            <span>View Plan</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

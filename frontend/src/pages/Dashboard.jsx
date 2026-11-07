@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Sparkles,
@@ -7,6 +7,11 @@ import {
   Loader2,
   CheckCircle2,
   Zap,
+  Award,
+  FolderKanban,
+  FileCheck2,
+  Code2,
+  Trash2,
 } from 'lucide-react';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import JobDescriptionInput from '../components/dashboard/JobDescriptionInput';
@@ -47,6 +52,18 @@ const Dashboard = () => {
   const [isLoadingReports, setIsLoadingReports] = useState(true);
   const [reportsError, setReportsError] = useState(null);
 
+  // Real Database Statistics state
+  const [stats, setStats] = useState({
+    totalPlans: 0,
+    completedPlans: 0,
+    averageScore: 0,
+    technicalQuestionsGenerated: 0,
+  });
+
+  // Delete modal state for recent reports
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Fetch candidate's report history from backend
   const fetchReports = async () => {
     setIsLoadingReports(true);
@@ -64,8 +81,21 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch candidate's real aggregate database statistics
+  const fetchStats = async () => {
+    try {
+      const res = await apiClient.get('/interviews/stats');
+      if (res.data?.success && res.data?.data) {
+        setStats(res.data.data);
+      }
+    } catch (err) {
+      console.warn('Could not load database stats:', err.message);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchStats();
   }, []);
 
   // Validation logic
@@ -75,8 +105,9 @@ const Dashboard = () => {
   );
   const isFormValid = isJobDescriptionValid && isProfileValid;
 
+  // Primary action: generate customized interview strategy
   const handleGenerateStrategy = async () => {
-    if (isGenerating) return; // Prevent duplicate submissions
+    if (isGenerating) return;
 
     const newErrors = {};
 
@@ -115,7 +146,6 @@ const Dashboard = () => {
     setIsGenerating(true);
     setGenerationStep(0);
 
-    // Dynamic step cycling for user feedback while backend processes Gemini API
     const stepInterval = setInterval(() => {
       setGenerationStep((prev) => {
         if (prev < GENERATION_STEPS.length - 1) {
@@ -142,10 +172,11 @@ const Dashboard = () => {
       if (response.data?.success && response.data?.data) {
         const createdReport = response.data.data;
         toast.success('Your Interview Strategy has been created!');
-        // Refresh recent reports list in background
+        // Refresh recent reports and stats in background
         fetchReports();
+        fetchStats();
         // Redirect to real report view
-        navigate(`/report/${createdReport._id}`);
+        navigate(`/reports/${createdReport._id}`);
       }
     } catch (err) {
       clearInterval(stepInterval);
@@ -156,6 +187,33 @@ const Dashboard = () => {
       toast.error(errorMsg);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Delete report handler
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
+
+    setIsDeleting(true);
+    const reportId = reportToDelete._id || reportToDelete.id;
+
+    try {
+      const response = await apiClient.delete(`/interviews/${reportId}`);
+
+      if (response.data?.success) {
+        toast.success(`Deleted plan for "${reportToDelete.jobTitle}"`);
+        setReportToDelete(null);
+        // Refresh list and stats
+        fetchReports();
+        fetchStats();
+      } else {
+        toast.error('Failed to delete report.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Could not delete report.';
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -170,7 +228,7 @@ const Dashboard = () => {
       {/* Main Dashboard Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
         {/* Welcome Section */}
-        <div className="max-w-3xl mb-8 sm:mb-10">
+        <div className="max-w-3xl mb-8">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>Powered by Google Gemini AI</span>
@@ -186,6 +244,69 @@ const Dashboard = () => {
             synthesizing targeted technical questions, behavioral STAR scenarios, and a custom
             7-day preparation roadmap.
           </p>
+        </div>
+
+        {/* Real Database Statistics Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">
+                Total Plans
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-white">
+                {stats.totalPlans}
+              </span>
+              <span className="text-[11px] text-slate-500 block">Saved in database</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-slate-800/80 text-indigo-400 flex items-center justify-center">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 block mb-0.5">
+                Completed
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-emerald-400">
+                {stats.completedPlans}
+              </span>
+              <span className="text-[11px] text-slate-500 block">Ready to practice</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <FileCheck2 className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400 block mb-0.5">
+                Average Match
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-indigo-400">
+                {stats.averageScore}%
+              </span>
+              <span className="text-[11px] text-slate-500 block">Candidate alignment</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <Award className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-violet-400 block mb-0.5">
+                Questions Synthesized
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-violet-400">
+                {stats.technicalQuestionsGenerated}
+              </span>
+              <span className="text-[11px] text-slate-500 block">Targeted technical Qs</span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center">
+              <Code2 className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
         {/* Large Two-Column Input Card Container */}
@@ -318,9 +439,64 @@ const Dashboard = () => {
           reports={reports}
           isLoading={isLoadingReports}
           error={reportsError}
-          onRetry={fetchReports}
+          onRetry={() => {
+            fetchReports();
+            fetchStats();
+          }}
+          onDelete={(rep) => setReportToDelete(rep)}
         />
       </main>
+
+      {/* Delete Confirmation Modal Dialog */}
+      {reportToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white text-center mb-2">
+              Delete Interview Plan?
+            </h3>
+
+            <p className="text-xs text-slate-400 text-center leading-relaxed mb-6">
+              Are you sure you want to delete the plan for{' '}
+              <strong className="text-slate-200">{reportToDelete.jobTitle}</strong>
+              {reportToDelete.companyName ? ` at ${reportToDelete.companyName}` : ''}? This action
+              cannot be undone.
+            </p>
+
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => setReportToDelete(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 flex items-center justify-center space-x-1.5 transition-colors"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

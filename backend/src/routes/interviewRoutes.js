@@ -3,11 +3,13 @@ import {
   createReport,
   generateReport,
   getReports,
+  getReportStats,
   getReportById,
   updateReport,
   deleteReport,
 } from '../controllers/interviewController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { aiLimiter } from '../middleware/rateLimiter.js';
 import { validateBody } from '../validations/authValidation.js';
 import {
   validateObjectId,
@@ -21,13 +23,16 @@ const router = express.Router();
 // Apply authentication middleware to all interview routes
 router.use(protect);
 
-// AI Generation endpoint
-router.post('/generate', validateBody(generateInterviewSchema), generateReport);
+// AI Generation endpoint (rate-limited)
+router.post('/generate', aiLimiter, validateBody(generateInterviewSchema), generateReport);
 
 router
   .route('/')
   .post(validateBody(createInterviewSchema), createReport)
   .get(getReports);
+
+// Report Statistics endpoint
+router.get('/stats', getReportStats);
 
 router
   .route('/:id')

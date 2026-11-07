@@ -1,5 +1,6 @@
 import React from 'react';
-import { History, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { History, Sparkles, Loader2, AlertCircle, RefreshCw, ArrowRight, FolderKanban } from 'lucide-react';
 import ReportCard from './ReportCard';
 
 const RecentReports = ({
@@ -7,6 +8,7 @@ const RecentReports = ({
   isLoading = false,
   error = null,
   onRetry = null,
+  onDelete = null,
 }) => {
   return (
     <section className="mt-12 sm:mt-16">
@@ -29,16 +31,29 @@ const RecentReports = ({
           </p>
         </div>
 
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            disabled={isLoading}
-            className="self-start sm:self-auto text-xs text-slate-400 hover:text-indigo-300 flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
-          >
-            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        )}
+        <div className="flex items-center space-x-2.5 self-start sm:self-auto">
+          {reports.length > 0 && (
+            <Link
+              to="/reports"
+              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+            >
+              <FolderKanban className="w-3.5 h-3.5" />
+              <span>Manage All Plans</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
+
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              disabled={isLoading}
+              className="text-xs text-slate-400 hover:text-indigo-300 flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading State */}
@@ -64,8 +79,12 @@ const RecentReports = ({
       ) : reports.length > 0 ? (
         /* Reports Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reports.map((report) => (
-            <ReportCard key={report._id || report.id} report={report} />
+          {reports.slice(0, 6).map((report) => (
+            <ReportCard
+              key={report._id || report.id}
+              report={report}
+              onDelete={onDelete}
+            />
           ))}
         </div>
       ) : (

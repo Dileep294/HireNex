@@ -68,12 +68,13 @@ export const generateReport = async (req, res, next) => {
 
     // 3. Save validated structured output and update status to 'completed'
     report.matchScore = aiResult.matchScore;
+    report.scoreExplanation = aiResult.scoreExplanation || '';
     report.strengths = aiResult.strengths;
     report.skillGaps = aiResult.skillGaps;
     report.technicalQuestions = aiResult.technicalQuestions;
     report.behavioralQuestions = aiResult.behavioralQuestions;
     report.preparationRoadmap = aiResult.preparationRoadmap;
-    report.aiAnalysis = aiResult.aiAnalysis || aiResult.scoreExplanation;
+    report.aiAnalysis = aiResult.aiAnalysis || aiResult.scoreExplanation || '';
     report.status = 'completed';
 
     await report.save();
@@ -142,20 +143,113 @@ export const createReport = async (req, res, next) => {
 
 /**
  * @route   GET /api/interviews
- * @desc    Fetch all interview reports belonging to the authenticated user
+ * @desc    Fetch interview reports belonging to the authenticated user with search, filter, sort & pagination
  * @access  Private (Protected)
  */
 export const getReports = async (req, res, next) => {
   try {
-    const reports = await InterviewReport.find({ user: req.user._id }).sort({
-      createdAt: -1,
-    });
+    const { search, status, sort, page, limit } = req.query;
+
+    const query = { user: req.user._id };
+
+    // Search by jobTitle or companyName (safe case-insensitive regex)
+    if (search && search.trim()) {
+      const safeSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { jobTitle: { $regex: safeSearch, $options: 'i' } },
+        { companyName: { $regex: safeSearch, $options: 'i' } },
+      ];
+    }
+
+    // Filter by report status
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Determine sort order
+    let sortOption = { createdAt: -1 };
+    if (sort === 'oldest') {
+      sortOption = { createdAt: 1 };
+    } else if (sort === 'score_desc' || sort === 'score_high') {
+      sortOption = { matchScore: -1, createdAt: -1 };
+    } else if (sort === 'score_asc' || sort === 'score_low') {
+      sortOption = { matchScore: 1, createdAt: -1 };
+    }
+
+    // Check if pagination was requested
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const isPaginated = !isNaN(pageNum) && pageNum > 0 && !isNaN(limitNum) && limitNum > 0;
+
+    const total = await InterviewReport.countDocuments(query);
+
+    let queryBuilder = InterviewReport.find(query).sort(sortOption);
+
+    if (isPaginated) {
+      const skip = (pageNum - 1) * limitNum;
+      queryBuilder = queryBuilder.skip(skip).limit(limitNum);
+    }
+
+    const reports = await queryBuilder.exec();
 
     res.status(200).json({
       success: true,
       message: 'Interview reports retrieved successfully',
       count: reports.length,
+      total,
+      page: isPaginated ? pageNum : 1,
+      totalPages: isPaginated ? Math.ceil(total / limitNum) : 1,
       data: reports,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/interviews/stats
+ * @desc    Fetch aggregated summary statistics for authenticated user's reports
+ * @access  Private (Protected)
+ */
+export const getReportStats = async (req, res, next) => {
+  try {
+    const stats = await InterviewReport.aggregate([
+      { $match: { user: req.user._id } },
+      {
+        $group: {
+          _id: null,
+          totalPlans: { $sum: 1 },
+          completedPlans: {
+            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+          },
+          avgMatchScore: {
+            $avg: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$matchScore', null],
+            },
+          },
+          technicalQuestionsGenerated: {
+            $sum: { $size: { $ifNull: ['$technicalQuestions', []] } },
+          },
+        },
+      },
+    ]);
+
+    const result = stats[0] || {
+      totalPlans: 0,
+      completedPlans: 0,
+      avgMatchScore: 0,
+      technicalQuestionsGenerated: 0,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Interview statistics retrieved successfully',
+      data: {
+        totalPlans: result.totalPlans || 0,
+        completedPlans: result.completedPlans || 0,
+        averageScore: Math.round(result.avgMatchScore || 0),
+        technicalQuestionsGenerated: result.technicalQuestionsGenerated || 0,
+      },
     });
   } catch (error) {
     next(error);

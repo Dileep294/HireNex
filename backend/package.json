@@ -13,7 +13,11 @@
     "test:resumes": "node test-resumes.js",
     "test:gemini": "node test-gemini.js",
     "test:phase7": "node test-phase7-flow.js",
-    "test:all": "node test-auth.js && node test-interviews.js && node test-resumes.js && node test-gemini.js && node test-phase7-flow.js"
+    "test:phase8": "node test-phase8-report.js",
+    "test:phase9": "node test-phase9-history.js",
+    "test:phase10": "node test-phase10-resume-builder.js",
+    "test:phase11": "node test-phase11-audit.js",
+    "test:all": "node test-auth.js && node test-interviews.js && node test-resumes.js && node test-gemini.js && node test-phase7-flow.js && node test-phase8-report.js && node test-phase9-history.js && node test-phase10-resume-builder.js && node test-phase11-audit.js"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -22,6 +26,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.4",
     "multer": "^1.4.5-lts.1",

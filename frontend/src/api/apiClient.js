@@ -11,7 +11,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 60000, // 60s timeout accommodates deep AI reasoning & PDF rendering
 });
 
 // Request Interceptor: useful for injecting headers or debugging in development

@@ -45,6 +45,10 @@ const interviewReportSchema = new mongoose.Schema(
       min: [0, 'Match score cannot be less than 0'],
       max: [100, 'Match score cannot exceed 100'],
     },
+    scoreExplanation: {
+      type: String,
+      default: '',
+    },
     strengths: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
@@ -92,6 +96,10 @@ const interviewReportSchema = new mongoose.Schema(
 
 // Compound index for querying user reports in reverse chronological order
 interviewReportSchema.index({ user: 1, createdAt: -1 });
+// Compound index for status-filtered queries
+interviewReportSchema.index({ user: 1, status: 1 });
+// Compound index for match score sorting
+interviewReportSchema.index({ user: 1, matchScore: -1 });
 
 const InterviewReport = mongoose.model('InterviewReport', interviewReportSchema);
 

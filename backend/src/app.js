@@ -6,8 +6,16 @@ import authRoutes from './routes/authRoutes.js';
 import interviewRoutes from './routes/interviewRoutes.js';
 import resumeRoutes from './routes/resumeRoutes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
+import { securityHeaders, verifyRequestOrigin } from './middleware/securityMiddleware.js';
 
 const app = express();
+
+// Security headers (nosniff, X-Frame-Options DENY, XSS protection, Referrer policy)
+app.use(securityHeaders);
+
+// Basic CSRF / Origin verification for state-modifying requests
+app.use(verifyRequestOrigin);
 
 // CORS configuration to allow frontend origin and credentials
 const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -27,6 +35,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cookie parsing middleware for JWT auth tokens
 app.use(cookieParser());
+
+// Apply global rate limiting to all /api routes
+app.use('/api', apiLimiter);
 
 // Root endpoint
 app.get('/', (req, res) => {

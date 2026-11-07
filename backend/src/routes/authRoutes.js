@@ -6,6 +6,7 @@ import {
   getMe,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
 import {
   validateBody,
   registerSchema,
@@ -14,8 +15,8 @@ import {
 
 const router = express.Router();
 
-router.post('/register', validateBody(registerSchema), register);
-router.post('/login', validateBody(loginSchema), login);
+router.post('/register', authLimiter, validateBody(registerSchema), register);
+router.post('/login', authLimiter, validateBody(loginSchema), login);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);
 
