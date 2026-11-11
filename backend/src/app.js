@@ -29,6 +29,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000',
   'https://hire-nex.vercel.app',
+  'https://hirenex.vercel.app',
 ]
   .filter(Boolean)
   .map((url) => url.replace(/\/+$/, ''));
@@ -42,13 +43,14 @@ app.use(
       const cleanOrigin = origin.replace(/\/+$/, '');
       const isAllowed =
         allowedOrigins.includes(cleanOrigin) ||
-        (process.env.NODE_ENV !== 'production' && cleanOrigin.includes('localhost')) ||
-        (process.env.ALLOW_VERCEL_PREVIEWS === 'true' && cleanOrigin.endsWith('.vercel.app'));
+        cleanOrigin.endsWith('.vercel.app') ||
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.includes('127.0.0.1');
 
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+        callback(null, false);
       }
     },
     credentials: true,

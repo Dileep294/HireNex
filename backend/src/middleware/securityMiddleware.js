@@ -33,23 +33,33 @@ export const verifyRequestOrigin = (req, res, next) => {
     return next();
   }
 
+  const cleanOrigin = origin.replace(/\/+$/, '');
+
   const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.CLIENT_URL,
+    'https://hire-nex.vercel.app',
+    'https://hirenex.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:3000',
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .flatMap((url) => url.split(',').map((u) => u.trim().replace(/\/+$/, '')));
 
-  const isAllowed = allowedOrigins.some((allowed) => {
-    try {
-      const allowedUrl = new URL(allowed).origin;
-      return origin === allowedUrl;
-    } catch {
-      return false;
-    }
-  });
+  const isAllowed =
+    allowedOrigins.some((allowed) => {
+      try {
+        const allowedUrl = new URL(allowed).origin;
+        return cleanOrigin === allowedUrl;
+      } catch {
+        return cleanOrigin === allowed;
+      }
+    }) ||
+    cleanOrigin.endsWith('.vercel.app') ||
+    cleanOrigin.includes('localhost') ||
+    cleanOrigin.includes('127.0.0.1');
 
   if (!isAllowed && process.env.NODE_ENV === 'production') {
     return res.status(403).json({
