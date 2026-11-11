@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -17,7 +17,7 @@ import DashboardNavbar from '../components/dashboard/DashboardNavbar';
 import JobDescriptionInput from '../components/dashboard/JobDescriptionInput';
 import CandidateProfileInput from '../components/dashboard/CandidateProfileInput';
 import RecentReports from '../components/dashboard/RecentReports';
-import apiClient from '../api/apiClient';
+import apiClient, { AI_REQUEST_TIMEOUT } from '../api/apiClient';
 
 const GENERATION_STEPS = [
   'Extracting core competencies and tech stack from job description...',
@@ -45,6 +45,7 @@ const Dashboard = () => {
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
+  const isGeneratingRef = useRef(false);
   const [generationStep, setGenerationStep] = useState(0);
 
   // Recent reports state loaded from backend API
@@ -107,7 +108,8 @@ const Dashboard = () => {
 
   // Primary action: generate customized interview strategy
   const handleGenerateStrategy = async () => {
-    if (isGenerating) return;
+    // Prevent duplicate submission while already generating
+    if (isGenerating || isGeneratingRef.current) return;
 
     const newErrors = {};
 
@@ -143,6 +145,7 @@ const Dashboard = () => {
     }
 
     // Begin AI Generation sequence
+    isGeneratingRef.current = true;
     setIsGenerating(true);
     setGenerationStep(0);
 
@@ -165,7 +168,9 @@ const Dashboard = () => {
         resumeText: resumeFile?.extractedText || '',
       };
 
-      const response = await apiClient.post('/interviews/generate', payload);
+      const response = await apiClient.post('/interviews/generate', payload, {
+        timeout: AI_REQUEST_TIMEOUT,
+      });
 
       clearInterval(stepInterval);
 
@@ -180,12 +185,30 @@ const Dashboard = () => {
       }
     } catch (err) {
       clearInterval(stepInterval);
-      const errorMsg =
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to generate interview strategy. Please try again.';
-      toast.error(errorMsg);
+
+      const isTimeout =
+        err.isTimeout ||
+        err.code === 'ECONNABORTED' ||
+        Boolean(err.message && err.message.toLowerCase().includes('timeout'));
+
+      let errorMsg;
+      if (isTimeout) {
+        errorMsg =
+          'AI interview strategy generation is taking longer than expected. Please check your connection or try again.';
+      } else if (err.status === 409) {
+        errorMsg =
+          err.message ||
+          'An interview plan is already being generated for your account. Please wait a moment.';
+      } else {
+        errorMsg =
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to generate interview strategy. Please try again.';
+      }
+
+      toast.error(errorMsg, { duration: 6000 });
     } finally {
+      isGeneratingRef.current = false;
       setIsGenerating(false);
     }
   };

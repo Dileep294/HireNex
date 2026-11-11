@@ -12,6 +12,7 @@ import { generateInterviewStrategy } from '../services/aiInterviewService.js';
  */
 export const generateReport = async (req, res, next) => {
   let report = null;
+  const pipelineStartTime = Date.now();
 
   try {
     const {
@@ -22,6 +23,21 @@ export const generateReport = async (req, res, next) => {
       resumeFileName,
       resumeText: clientResumeText,
     } = req.body;
+
+    // Guard against duplicate concurrent requests for the same user (within last 2 minutes)
+    const activeProcessingReport = await InterviewReport.findOne({
+      user: req.user._id,
+      status: 'processing',
+      createdAt: { $gte: new Date(Date.now() - 2 * 60 * 1000) },
+    });
+
+    if (activeProcessingReport) {
+      return res.status(409).json({
+        success: false,
+        message: 'An interview strategy is already being generated for your account. Please wait for it to complete.',
+        data: { reportId: activeProcessingReport._id, status: 'processing' },
+      });
+    }
 
     let resumeText = clientResumeText || '';
 
@@ -44,6 +60,7 @@ export const generateReport = async (req, res, next) => {
     }
 
     // 1. Create InterviewReport record with 'processing' status
+    const initDbStart = Date.now();
     report = await InterviewReport.create({
       user: req.user._id,
       jobTitle,
@@ -54,6 +71,7 @@ export const generateReport = async (req, res, next) => {
       resumeText: resumeText || '',
       status: 'processing',
     });
+    console.log(`⏱️ [MongoDB] Initial report created in ${Date.now() - initDbStart}ms (ID: ${report._id})`);
 
     // 2. Call Gemini AI service (supports custom client injection for automated tests)
     const customAiClient = req.app?.locals?.customAiClient || null;
@@ -67,6 +85,7 @@ export const generateReport = async (req, res, next) => {
     });
 
     // 3. Save validated structured output and update status to 'completed'
+    const saveDbStart = Date.now();
     report.matchScore = aiResult.matchScore;
     report.scoreExplanation = aiResult.scoreExplanation || '';
     report.strengths = aiResult.strengths;
@@ -78,6 +97,9 @@ export const generateReport = async (req, res, next) => {
     report.status = 'completed';
 
     await report.save();
+    const saveDbDuration = Date.now() - saveDbStart;
+    console.log(`⏱️ [MongoDB] Report saved to database in ${saveDbDuration}ms`);
+    console.log(`🎉 [Interview] Total generation completed in ${Date.now() - pipelineStartTime}ms`);
 
     return res.status(201).json({
       success: true,

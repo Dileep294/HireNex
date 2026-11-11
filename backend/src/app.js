@@ -11,6 +11,9 @@ import { securityHeaders, verifyRequestOrigin } from './middleware/securityMiddl
 
 const app = express();
 
+// Enable trust proxy for reverse proxy environments (Render, Heroku, Nginx)
+app.set('trust proxy', 1);
+
 // Security headers (nosniff, X-Frame-Options DENY, XSS protection, Referrer policy)
 app.use(securityHeaders);
 
@@ -18,11 +21,36 @@ app.use(securityHeaders);
 app.use(verifyRequestOrigin);
 
 // CORS configuration to allow frontend origin and credentials
-const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'https://hire-nex.vercel.app',
+]
+  .filter(Boolean)
+  .map((url) => url.replace(/\/+$/, ''));
 
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (mobile, Postman, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      const isAllowed =
+        allowedOrigins.includes(cleanOrigin) ||
+        (process.env.NODE_ENV !== 'production' && cleanOrigin.includes('localhost')) ||
+        (process.env.ALLOW_VERCEL_PREVIEWS === 'true' && cleanOrigin.endsWith('.vercel.app'));
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

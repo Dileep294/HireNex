@@ -172,8 +172,8 @@ export default function InterviewReport() {
         setError('Failed to retrieve interview report details.');
       }
     } catch (err) {
-      const status = err.response?.status;
-      const msg = err.response?.data?.message;
+      const status = err.status || err.response?.status;
+      const msg = err.message || err.data?.message || err.response?.data?.message;
 
       if (status === 404) {
         setError('Interview report not found. It may have been deleted or does not exist.');

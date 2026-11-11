@@ -8,8 +8,8 @@ import { validateAiResponse } from '../validations/aiResponseValidation.js';
 const MAX_JOB_DESC_CHARS = 12000;
 const MAX_RESUME_CHARS = 30000;
 const MAX_SELF_DESC_CHARS = 10000;
-const REQUEST_TIMEOUT_MS = 45000;
-const MAX_RETRIES = 2;
+const REQUEST_TIMEOUT_MS = 85000;
+const MAX_RETRIES = 1;
 
 /**
  * Remove markdown code blocks if wrapped by Gemini
@@ -174,14 +174,19 @@ export const generateInterviewStrategy = async ({
   });
 
   // 5. Invoke Gemini API
+  console.log(`⏱️ [Gemini AI] Initiating interview generation with model "${modelName}"...`);
+  const geminiStart = Date.now();
   const rawTextOutput = await callGeminiWithRetry(
     aiClient,
     modelName,
     prompt,
     INTERVIEW_SYSTEM_INSTRUCTION
   );
+  const geminiDuration = Date.now() - geminiStart;
+  console.log(`⏱️ [Gemini AI] Model response received in ${geminiDuration}ms`);
 
   // 6. Clean and parse JSON
+  const validationStart = Date.now();
   const cleanedJson = cleanJsonText(rawTextOutput);
   let parsedJson;
   try {
@@ -194,6 +199,8 @@ export const generateInterviewStrategy = async ({
 
   // 7. Strictly Validate Schema
   const validatedReport = validateAiResponse(parsedJson);
+  const validationDuration = Date.now() - validationStart;
+  console.log(`⏱️ [AI Validation] Response schema validated in ${validationDuration}ms`);
 
   return validatedReport;
 };

@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
 import app from './src/app.js';
+import connectDB from './src/config/db.js';
 import User from './src/models/User.js';
 import { generateToken } from './src/utils/token.js';
 import { renderResumeHtml, generatePdfFromResumeData } from './src/services/pdfService.js';
@@ -66,8 +67,7 @@ function makeRequest({ port, method, path, headers = {}, body = null, returnBina
 async function runPhase10Tests() {
   console.log('\n🧪 Starting HireNex Phase 10 Resume Builder & PDF Generation Verification...\n');
 
-  const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hirenex_phase10_test';
-  await mongoose.connect(MONGO_URI);
+  await connectDB();
   console.log('✅ [MongoDB] Connected successfully for Phase 10 tests.');
 
   await User.deleteMany({ email: { $regex: /@phase10test\.com$/ } });

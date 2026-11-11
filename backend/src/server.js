@@ -6,6 +6,7 @@ dotenv.config();
 import app from './app.js';
 import connectDB from './config/db.js';
 import { validateEnvironment } from './config/envValidation.js';
+import { getGeminiModelName } from './config/gemini.js';
 
 // Validate required environment configurations
 validateEnvironment();
@@ -18,6 +19,7 @@ connectDB();
 const server = app.listen(PORT, () => {
   console.log(`🚀 [Server] HireNex Backend running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   console.log(`🔗 [Server] Health check available at: http://localhost:${PORT}/api/health`);
+  console.log(`🤖 [Gemini AI] Configured model: ${getGeminiModelName()}`);
 });
 
 // Graceful shutdown handling

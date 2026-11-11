@@ -6,6 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "build": "node -e \"console.log('HireNex backend build ready')\"",
     "dev": "nodemon src/server.js",
     "test": "node test-gemini.js",
     "test:auth": "node test-auth.js",

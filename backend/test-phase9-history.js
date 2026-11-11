@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
 import app from './src/app.js';
+import connectDB from './src/config/db.js';
 import User from './src/models/User.js';
 import InterviewReport from './src/models/InterviewReport.js';
 import { generateToken } from './src/utils/token.js';
@@ -61,8 +62,7 @@ function makeRequest({ port, method, path, headers = {}, body = null }) {
 async function runPhase9Tests() {
   console.log('\n🧪 Starting HireNex Phase 9 Report History & Management Verification...\n');
 
-  const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/hirenex_phase9_test';
-  await mongoose.connect(MONGO_URI);
+  await connectDB();
   console.log('✅ [MongoDB] Connected successfully for Phase 9 tests.');
 
   // Clean test collections

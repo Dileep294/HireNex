@@ -6,8 +6,9 @@ export const validateEnvironment = () => {
   const warnings = [];
 
   // Critical for database
-  if (!process.env.MONGO_URI) {
-    issues.push('MONGO_URI is missing. MongoDB connection will fail.');
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!mongoUri) {
+    issues.push('MONGODB_URI (or MONGO_URI) is missing. MongoDB connection will fail.');
   }
 
   // Critical for JWT authentication
@@ -23,9 +24,18 @@ export const validateEnvironment = () => {
     warnings.push('GOOGLE_GENAI_API_KEY is not set or using placeholder. AI generation features will require a valid key.');
   }
 
-  // Client URL
-  if (!process.env.CLIENT_URL) {
-    warnings.push('CLIENT_URL is not set. Defaulting to http://localhost:5173 for CORS.');
+  // Gemini Model Validation
+  const geminiModel = process.env.GEMINI_MODEL;
+  if (!geminiModel) {
+    warnings.push('GEMINI_MODEL is not set. Defaulting to gemini-3.8-flash.');
+  } else if (geminiModel.trim() === 'gemini-2.5-flash') {
+    warnings.push('GEMINI_MODEL is set to deprecated "gemini-2.5-flash". Automatically using gemini-3.8-flash.');
+  }
+
+  // Frontend Client URL
+  const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+  if (!frontendUrl) {
+    warnings.push('FRONTEND_URL (or CLIENT_URL) is not set. Defaulting to http://localhost:5173 for CORS.');
   }
 
   // Report issues

@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: hirenex-backend
+    env: node
+    plan: starter
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GOOGLE_GENAI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: FRONTEND_URL
+        sync: false
+

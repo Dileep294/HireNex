@@ -382,7 +382,7 @@ export default function ResumeBuilder() {
         toast.success('Resume parsed! Contact and skills updated in builder.');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to parse resume PDF.');
+      toast.error(err.message || err.response?.data?.message || 'Failed to parse resume PDF.');
     } finally {
       setIsParsingResume(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -408,7 +408,7 @@ export default function ResumeBuilder() {
         toast.success('AI ATS analysis complete!');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to analyze resume against job description.');
+      toast.error(err.message || err.response?.data?.message || 'Failed to analyze resume against job description.');
     } finally {
       setIsOptimizing(false);
     }

@@ -838,6 +838,7 @@ export async function generatePdfFromResumeData(resumeData) {
 
   const browser = await puppeteer.launch({
     headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

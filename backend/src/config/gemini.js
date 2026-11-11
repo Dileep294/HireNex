@@ -22,7 +22,11 @@ export const getGeminiApiKey = () => {
  * Retrieve configured Gemini model name
  */
 export const getGeminiModelName = () => {
-  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL;
+  if (!model || model.trim().length === 0 || model.trim() === 'gemini-2.5-flash') {
+    return 'gemini-3.8-flash';
+  }
+  return model.trim();
 };
 
 /**

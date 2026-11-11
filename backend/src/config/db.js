@@ -5,7 +5,10 @@ import mongoose from 'mongoose';
  * Gracefully falls back to local MongoDB if remote Atlas is unreachable or IP blocked.
  */
 const connectDB = async () => {
-  const primaryURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hirenex';
+  const primaryURI =
+    process.env.MONGODB_URI ||
+    process.env.MONGO_URI ||
+    'mongodb://127.0.0.1:27017/hirenex';
   const fallbackURI = 'mongodb://127.0.0.1:27017/hirenex';
 
   try {
