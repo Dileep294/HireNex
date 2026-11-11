@@ -14,25 +14,19 @@ const app = express();
 // Enable trust proxy for reverse proxy environments (Render, Heroku, Nginx)
 app.set('trust proxy', 1);
 
-// Security headers (nosniff, X-Frame-Options DENY, XSS protection, Referrer policy)
-app.use(securityHeaders);
-
-// Basic CSRF / Origin verification for state-modifying requests
-app.use(verifyRequestOrigin);
-
 // CORS configuration to allow frontend origin and credentials
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
+  'https://hire-nex.vercel.app',
+  'https://hirenex.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000',
-  'https://hire-nex.vercel.app',
-  'https://hirenex.vercel.app',
 ]
   .filter(Boolean)
-  .map((url) => url.replace(/\/+$/, ''));
+  .flatMap((url) => url.split(',').map((u) => u.trim().replace(/\/+$/, '')));
 
 app.use(
   cors({
@@ -58,6 +52,12 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
+
+// Security headers (nosniff, X-Frame-Options DENY, XSS protection, Referrer policy)
+app.use(securityHeaders);
+
+// Basic CSRF / Origin verification for state-modifying requests
+app.use(verifyRequestOrigin);
 
 // Standard JSON and urlencoded body parsing middleware
 app.use(express.json({ limit: '10mb' }));

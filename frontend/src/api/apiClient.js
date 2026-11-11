@@ -3,7 +3,7 @@ import axios from 'axios';
 const rawApiUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:5000/api';
+  (import.meta.env.PROD ? 'https://hirenex-ndn6.onrender.com/api' : 'http://localhost:5000/api');
 
 const cleanApiUrl = rawApiUrl.replace(/\/+$/, '');
 const API_BASE_URL = cleanApiUrl.endsWith('/api') ? cleanApiUrl : `${cleanApiUrl}/api`;
